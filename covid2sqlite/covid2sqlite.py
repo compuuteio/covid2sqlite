@@ -1,13 +1,14 @@
 import csv
-
 import sqlite3
+import sys
 from datetime import datetime
 from typing import List, Optional
 
 import requests
-import sys
+
 
 class Covid2Sqlite():
+    """Download a CSV file from an URL and store it into a SQLite database."""
     
     csv_source_url: str = 'https://opendata.ecdc.europa.eu/covid19/casedistribution/csv'
     
@@ -15,6 +16,14 @@ class Covid2Sqlite():
         self.verbose = verbose
         
     def get_csv_file(self, csv_file_url: Optional[str]=None) -> str:
+        """Retrieves a CSV file from an URL.
+
+        Args:
+            csv_file_url (Optional[str], optional): CSV file's URL. If not provided, use the default URL: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv. Defaults to None.
+
+        Returns:
+            str: Returns the downloaded file's name.
+        """        
         csv_destination_filename = "covid_report_" + datetime.utcnow().strftime("%Y_%m_%d") + ".csv"
         if csv_file_url:
             self.csv_source_url = csv_file_url
@@ -35,6 +44,19 @@ class Covid2Sqlite():
             return None
         
     def save_csv_to_sqlite(self, csv_filename: str, sqlite_db_name: str = "covid.db", table_name:str = "covid", table_primary_keys: Optional[List[str]] = None) -> bool:
+        """Creates a SQLite database and upload the CSV file into it.
+        
+        Gets the header of the CSV file and create the database's table column names.
+
+        Args:
+            csv_filename (str): CSV filename.
+            sqlite_db_name (str, optional): Destination database. Defaults to "covid.db".
+            table_name (str, optional): Destination table in the database. Defaults to "covid".
+            table_primary_keys (Optional[List[str]], optional): Columns to keep as primary keys. Defaults to None.
+
+        Returns:
+            bool: Returns True if the loading into the database is successful.
+        """        
         if csv_filename:
             table_pk: str = ''
             csv_filename.encode('utf-8')
@@ -50,8 +72,8 @@ class Covid2Sqlite():
             insert_table_query = "INSERT INTO " + table_name + " VALUES ( " + table_fields + " );"
             
             if self.verbose:
-                print("\n" + create_table_query)
-                print("\n" + insert_table_query + "\n")
+                print("\nCreate table query:\n" + create_table_query)
+                print("\nInsert data query:\n" + insert_table_query + "\n")
             
             conn = sqlite3.connect(sqlite_db_name)
             cur = conn.cursor()
@@ -62,15 +84,31 @@ class Covid2Sqlite():
                     reader = csv.reader(f)
                     for field in reader:
                         cur.execute(insert_table_query, field)
+                if self.verbose:
+                    print("File successfully uploaded into the database {}.".format(sqlite_db_name))
+                return True
             except:
                 print("Error while writing in the database: ' ", sys.exc_info()[1], " '")
+                return False
             
             conn.commit()
             conn.close()
+        else:
+            print("Please provide a valid filename.")
+            return False
+                
             
     def get_csv_header(self, csv_filename: str) -> List[str]:
+        """Gets the header from the CSV file.
+
+        Args:
+            csv_filename (str): File to get the header (first line) from.
+
+        Returns:
+            List[str]: Header in a list of strings.
+        """        
         if self.verbose :
-            print("Getting header from CSV file: '{}'...".format(csv_filename))
+            print("\nGetting header from CSV file: '{}'...".format(csv_filename))
         try:
             with open(csv_filename) as f:
                 reader = csv.reader(f)

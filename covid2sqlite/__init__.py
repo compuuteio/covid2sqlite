@@ -4,6 +4,6 @@ __version__ = '0.1.0'
 
 
 if __name__ == "__main__":
-    mycovid = Covid2Sqlite()
-    # print(mycovid.get_csv_file())
-    mycovid.save_csv_to_sqlite("covid_report_2020_10_17.csv", table_primary_keys=["dateRep", "countriesAndTerritories", "geoId"])
+    my_covid_data = Covid2Sqlite()
+    filename = my_covid_data.get_csv_file()
+    my_covid_data.save_csv_to_sqlite(csv_filename=filename)
